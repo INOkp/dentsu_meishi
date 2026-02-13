@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zoom Camera On Scenario</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap');
+        
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background-color: #f3f4f6;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        /* 自分の映像を鏡のように反転させる（Zoomのデフォルト挙動） */
+        .mirror-mode {
+            transform: scaleX(-1);
+        }
+    </style>
+</head>
+<body class="gap-6">
+
+    <!-- Zoomウィンドウ風コンテナ -->
+    <div id="zoom-container" class="w-full max-w-4xl bg-[#1a1a1a] rounded-lg shadow-2xl overflow-hidden border border-gray-700 relative select-none">
+        
+        <!-- ヘッダー (macOSウィンドウ風) -->
+        <div class="bg-[#242424] h-10 flex items-center px-4 justify-between border-b border-gray-800">
+            <!-- 信号機ボタン -->
+            <div class="flex gap-2">
+                <div class="w-3 h-3 rounded-full bg-[#ff5f57] border border-[#e0443e]"></div>
+                <div class="w-3 h-3 rounded-full bg-[#febc2e] border border-[#d89e24]"></div>
+                <div class="w-3 h-3 rounded-full bg-[#28c840] border border-[#1aab29]"></div>
+            </div>
+            
+            <!-- タイトル -->
+            <div class="flex items-center gap-2 text-gray-400 text-xs font-medium">
+                <i class="fas fa-lock text-[10px]"></i>
+                <span>Zoomミーティング</span>
+            </div>
+
+            <!-- 右上の表示オプション -->
+            <div class="bg-[#383838] text-white text-xs px-2 py-1 rounded flex items-center gap-1 cursor-default">
+                <i class="fas fa-th-large"></i>
+                <span>ギャラリー</span>
+            </div>
+        </div>
+
+        <!-- メインビデオエリア -->
+        <div class="p-1 bg-[#1a1a1a] grid grid-cols-2 gap-1 h-[400px]">
+            
+            <!-- ユーザー1 (自分: IMG_1284.jpg) -->
+            <div id="user1-view" class="bg-black relative flex items-center justify-center border border-gray-800 overflow-hidden group">
+                
+                <!-- カメラ映像 (自分) -->
+                <!-- object-coverで枠いっぱいにトリミング表示 -->
+                <img id="user1-video" src="IMG_1284.jpg" class="w-full h-full object-cover mirror-mode" alt="自分の映像">
+
+                <!-- アバター (カメラOFF時に表示) -->
+                <div id="user1-avatar" class="hidden w-24 h-24 rounded-full bg-gray-600 flex items-center justify-center text-white text-2xl font-bold border-2 border-gray-500">
+                    猪原
+                </div>
+                
+                <!-- 名前ラベル -->
+                <div class="absolute bottom-2 left-2 bg-[rgba(0,0,0,0.6)] text-white text-xs font-medium px-2 py-1 rounded select-none z-10">
+                    猪原 大智 (自分)
+                </div>
+
+                <!-- ミュートアイコン (初期状態はマイクONなので非表示) -->
+                <div id="user1-mute-status" class="hidden absolute top-2 right-2 text-red-500 bg-[rgba(0,0,0,0.6)] w-8 h-8 rounded flex items-center justify-center transition-opacity duration-200 z-10">
+                    <i class="fas fa-microphone-slash"></i>
+                </div>
+            </div>
+
+            <!-- ユーザー2 (相手: IMG_5044 2.jpg) -->
+            <div class="bg-black relative flex items-center justify-center border border-gray-800 overflow-hidden">
+                
+                <!-- カメラ映像 (相手) -->
+                <!-- object-coverでいい感じにトリミング -->
+                <img src="IMG_5044 2.jpg" class="w-full h-full object-cover" alt="相手の映像">
+
+                <!-- 名前ラベル -->
+                <div class="absolute bottom-2 left-2 bg-[rgba(0,0,0,0.6)] text-white text-xs font-medium px-2 py-1 rounded select-none z-10">
+                    大瀧篤
+                </div>
+            </div>
+
+        </div>
+
+        <!-- フッターコントロールバー -->
+        <div class="bg-[#1a1a1a] h-16 flex items-center justify-center relative border-t border-gray-800">
+            
+            <!-- 左側（マイク/ビデオ スイッチ） -->
+            <div class="absolute left-4 flex gap-4">
+                
+                <!-- マイクボタン (初期: ON) -->
+                <div id="btn-audio" onclick="toggleAudio()" class="flex flex-col items-center gap-1 text-gray-300 hover:bg-gray-800 p-2 rounded cursor-pointer min-w-[50px] transition-colors">
+                    <i id="icon-audio" class="fas fa-microphone text-xl"></i>
+                    <span id="text-audio" class="text-[10px]">ミュート</span>
+                </div>
+
+                <!-- ビデオボタン (初期: ON) -->
+                <div id="btn-video" onclick="toggleVideo()" class="flex flex-col items-center gap-1 text-gray-300 hover:bg-gray-800 p-2 rounded cursor-pointer min-w-[50px] transition-colors">
+                    <i id="icon-video" class="fas fa-video text-xl"></i>
+                    <span id="text-video" class="text-[10px]">ビデオの停止</span>
+                </div>
+
+            </div>
+
+            <!-- 中央（メインコントロール） -->
+            <div class="flex gap-2">
+                <div class="flex flex-col items-center gap-1 text-gray-300 hover:bg-gray-800 p-2 rounded cursor-pointer min-w-[50px]">
+                    <div class="relative">
+                        <i class="fas fa-user-friends text-xl"></i>
+                        <span class="absolute -top-1 -right-2 bg-red-500 text-white text-[8px] px-1 rounded-full">2</span>
+                    </div>
+                    <span class="text-[10px]">参加者</span>
+                </div>
+                <div class="flex flex-col items-center gap-1 text-gray-300 hover:bg-gray-800 p-2 rounded cursor-pointer min-w-[50px]">
+                    <i class="fas fa-comment-alt text-xl"></i>
+                    <span class="text-[10px]">チャット</span>
+                </div>
+                <div class="flex flex-col items-center gap-1 text-green-500 hover:bg-gray-800 p-2 rounded cursor-pointer min-w-[50px]">
+                    <i class="fas fa-share-square text-xl"></i>
+                    <span class="text-[10px]">画面共有</span>
+                </div>
+                <div class="flex flex-col items-center gap-1 text-gray-300 hover:bg-gray-800 p-2 rounded cursor-pointer min-w-[50px]">
+                    <i class="far fa-smile text-xl"></i>
+                    <span class="text-[10px]">リアクション</span>
+                </div>
+                <div class="flex flex-col items-center gap-1 text-gray-300 hover:bg-gray-800 p-2 rounded cursor-pointer min-w-[50px]">
+                    <i class="fas fa-th-large text-xl"></i>
+                    <span class="text-[10px]">アプリ</span>
+                </div>
+            </div>
+
+            <!-- 右側（終了ボタン） -->
+            <div class="absolute right-4">
+                <button class="bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-1.5 px-4 rounded">
+                    退出
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="text-gray-500 text-sm mt-4 text-center">
+        ※画像が表示されない場合は、このHTMLファイルを画像と同じフォルダに保存してください。<br>
+        マイク/ビデオボタンで自分の状態を切り替えられます。
+    </div>
+
+    <script>
+        // 初期状態: マイクON, ビデオON
+        let isMuted = false;
+        let isVideoOn = true;
+
+        function toggleAudio() {
+            isMuted = !isMuted;
+            const btn = document.getElementById('btn-audio');
+            const icon = document.getElementById('icon-audio');
+            const text = document.getElementById('text-audio');
+            const statusIcon = document.getElementById('user1-mute-status');
+
+            if (isMuted) {
+                // ミュートにする
+                icon.className = 'fas fa-microphone-slash text-xl text-red-500';
+                text.innerText = 'ミュート解除';
+                btn.classList.remove('text-gray-300');
+                btn.classList.add('text-gray-400');
+                statusIcon.style.display = 'flex'; // 画面内アイコン表示
+            } else {
+                // ミュート解除
+                icon.className = 'fas fa-microphone text-xl text-gray-300';
+                text.innerText = 'ミュート';
+                btn.classList.remove('text-gray-400');
+                btn.classList.add('text-gray-300');
+                statusIcon.style.display = 'none'; // 画面内アイコン非表示
+            }
+        }
+
+        function toggleVideo() {
+            isVideoOn = !isVideoOn;
+            const btn = document.getElementById('btn-video');
+            const icon = document.getElementById('icon-video');
+            const text = document.getElementById('text-video');
+            
+            const videoImg = document.getElementById('user1-video');
+            const avatar = document.getElementById('user1-avatar');
+
+            if (isVideoOn) {
+                // ビデオONにする
+                icon.className = 'fas fa-video text-xl text-gray-300';
+                text.innerText = 'ビデオの停止';
+                btn.classList.remove('text-gray-400');
+                btn.classList.add('text-gray-300');
+                
+                videoImg.style.display = 'block';
+                avatar.style.display = 'none';
+            } else {
+                // ビデオOFFにする
+                icon.className = 'fas fa-video-slash text-xl text-red-500';
+                text.innerText = 'ビデオの開始';
+                btn.classList.remove('text-gray-300');
+                btn.classList.add('text-gray-400');
+
+                videoImg.style.display = 'none';
+                avatar.style.display = 'flex'; // アバターを表示
+            }
+        }
+    </script>
+
+</body>
+</html>
