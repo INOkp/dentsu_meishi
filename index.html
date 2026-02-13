@@ -69,19 +69,20 @@
 
     <script>
         // --- 設定 ---
-        const IMG_BACK_INITIAL = 'ズッ友！.png'; 
-        const IMG_LOGO = 'アセット 3@4x.png';
+        const IMG_BACK_INITIAL = 'ズッ友！.png'; // 初期画像
+        const IMG_LOGO = 'アセット 3@4x.png'; // ロゴ画像
 
         // 名刺サイズ比率 (91mm x 55mm)
         const CARD_WIDTH = 9.1;
         const CARD_HEIGHT = 5.5;
         const CARD_DEPTH = 0.15;
-        const CARD_RADIUS = 0.3;
+        const CARD_RADIUS = 0.3; // 角丸の半径
 
         let scene, camera, renderer, cardMesh;
         let isDragging = false;
         let previousMousePosition = { x: 0, y: 0 };
 
+        // 画像切り替え用にグローバル化
         let backTexture, ctxB;
 
         window.onload = function() {
@@ -178,7 +179,7 @@
             // 初期の裏面画像をロード
             changeBackImage(IMG_BACK_INITIAL);
 
-            // --- ジオメトリ生成 ---
+            // --- ジオメトリ生成 (角丸対応) ---
             const shape = new THREE.Shape();
             const w = CARD_WIDTH;
             const h = CARD_HEIGHT;
@@ -236,13 +237,7 @@
             frontMesh.position.z = CARD_DEPTH + 0.001;
 
             const backMesh = new THREE.Mesh(planeGeo, matBack);
-            backMesh.rotation.y = Math.PI; // メッシュ自体を裏返す
-
-            // ★修正点: テクスチャの設定で反転させる
-            // テクスチャの中心を基準に水平方向（U方向）に反転
-            backTexture.center.set(0.5, 0.5);
-            backTexture.repeat.set(-1, 1);
-
+            backMesh.rotation.y = Math.PI; // 裏返す
             backMesh.position.z = -0.001;
 
             cardMesh = new THREE.Group();
@@ -272,10 +267,9 @@
             
             backImg.onload = () => {
                 ctxB.fillStyle = '#222';
-                ctxB.fillRect(0, 0, 1024, 619); // 背景リセット
+                ctxB.fillRect(0, 0, 1024, 619); // リセット
                 
-                // ★修正点: Canvas側での反転処理は削除し、素直に描画する
-                // 反転はThree.jsのテクスチャ設定（backTexture.repeat）に任せる
+                // ★修正: 素直に画像を描画する（反転処理を削除）
                 ctxB.drawImage(backImg, 0, 0, 1024, 619);
                 
                 backTexture.needsUpdate = true; // Three.jsに更新を通知
@@ -287,7 +281,8 @@
                 ctxB.fillStyle = '#fff';
                 ctxB.font = '30px Arial';
                 ctxB.textAlign = 'center';
-                // エラー表示も素直に描画
+                
+                // ★修正: エラー時のテキスト描画も素直に行う
                 ctxB.fillText('Image Load Failed', 512, 310);
                 
                 backTexture.needsUpdate = true;
@@ -330,7 +325,7 @@
         }
         function onTouchMove(event) {
             if (isDragging && event.touches.length === 1) {
-                event.preventDefault();
+                event.preventDefault(); // スクロール防止
                 const deltaMove = { x: event.touches[0].clientX - previousMousePosition.x, y: event.touches[0].clientY - previousMousePosition.y };
                 cardMesh.rotation.y += deltaMove.x * 0.01;
                 cardMesh.rotation.x += deltaMove.y * 0.01;
