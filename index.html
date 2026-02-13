@@ -3,194 +3,339 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MEISHOT - Friendly Shooting</title>
+    <title>MEISHOT - 3D Card Result</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <!-- 親しみやすい丸ゴシック体 -->
-    <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         body {
+            margin: 0;
+            overflow: hidden;
             font-family: 'M PLUS Rounded 1c', sans-serif;
-            background-color: #f0f4f8; /* 優しいグレー背景 */
-            color: #333;
+            background-color: #f0f4f8; /* 初期背景色 */
         }
-
-        /* ポップなグラデーションテキスト */
-        .text-gradient {
-            background: linear-gradient(to right, #ff7e5f, #feb47b); /* Sunset gradient */
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+        #canvas-container {
+            width: 100vw;
+            height: 100vh;
+            display: block;
         }
-
-        /* 柔らかい影 */
-        .soft-shadow {
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-        }
-
-        /* シャッターボタンのアニメーション */
-        .shutter-btn {
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .shutter-btn:active {
-            transform: scale(0.95);
-        }
-
-        /* カウントダウンの数字 */
-        .countdown-number {
-            font-family: 'M PLUS Rounded 1c', sans-serif;
-            text-shadow: 4px 4px 0px rgba(0,0,0,0.1);
-        }
-
-        /* フラッシュ演出 */
-        #flash-overlay {
+        .overlay-ui {
+            position: absolute;
             pointer-events: none;
-            transition: opacity 0.15s ease-out;
+        }
+        .interactive {
+            pointer-events: auto;
         }
     </style>
 </head>
-<body class="flex flex-col items-center justify-center min-h-screen p-4">
+<body>
 
-    <!-- メインアプリコンテナ -->
-    <div class="relative w-full max-w-5xl bg-white rounded-3xl soft-shadow overflow-hidden border border-white">
-        
-        <!-- ヘッダー -->
-        <div class="flex justify-between items-center px-8 py-5 bg-white z-20 relative">
-            <!-- ロゴエリア -->
-            <div class="flex items-center gap-2">
-                <div class="w-10 h-10 bg-gradient-to-tr from-[#ff7e5f] to-[#feb47b] rounded-xl flex items-center justify-center text-white shadow-md">
-                    <i class="fas fa-camera text-lg"></i>
-                </div>
-                <h1 class="text-2xl font-extrabold text-gray-800 tracking-tight">MEISHOT</h1>
+    <div id="canvas-container"></div>
+
+    <div class="overlay-ui inset-0 flex flex-col justify-between p-6">
+        <div class="flex justify-between items-start">
+            <div>
+                <h1 class="text-gray-800 text-2xl font-extrabold tracking-tight drop-shadow-sm">
+                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-[#ff7e5f] to-[#feb47b]">MEISHOT</span>
+                    RESULT
+                </h1>
+                <p class="text-gray-500 text-sm mt-1"><i class="fas fa-hand-pointer mr-1"></i> ドラッグして回転</p>
             </div>
             
-            <!-- テーマ表示（中央） -->
-            <div class="absolute left-1/2 transform -translate-x-1/2 text-center">
-                <div class="bg-gray-100 px-6 py-2 rounded-full border border-gray-200 flex flex-col items-center">
-                    <span class="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">今回のお題</span>
-                    <span class="text-xl font-extrabold text-[#ff7e5f]">✨ 🩷プリクラ風ツーショット📷 ✨</span>
-                </div>
-            </div>
-
-            <!-- ステータス（右） -->
-            <div class="flex items-center gap-3">
-                <span class="px-3 py-1 bg-green-100 text-green-600 rounded-full text-xs font-bold flex items-center gap-1.5">
-                    <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                    準備OK
-                </span>
+            <div class="bg-white/80 backdrop-blur-md text-gray-600 px-4 py-2 rounded-full border border-gray-200 text-xs shadow-sm">
+                Generated: 2026.02.13
             </div>
         </div>
 
-        <!-- ビューファインダーエリア -->
-        <div class="relative h-[480px] w-full bg-gray-50 flex p-2 gap-2">
-            
-            <!-- 左画面：自分 -->
-            <div class="w-1/2 relative rounded-2xl overflow-hidden shadow-inner group bg-gray-200">
-                <!-- 自分の映像 (鏡面反転) -->
-                <img src="IMG_1284.jpg" class="w-full h-full object-cover transform scale-x-[-1]" alt="Self">
-                
-                <!-- 名前ラベル -->
-                <div class="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm px-4 py-1.5 rounded-full shadow-sm text-sm font-bold text-gray-700 flex items-center gap-2">
-                    <div class="w-2 h-2 rounded-full bg-blue-500"></div>
-                    猪原 (あなた)
-                </div>
-            </div>
-
-            <!-- 右画面：相手 -->
-            <div class="w-1/2 relative rounded-2xl overflow-hidden shadow-inner bg-gray-200">
-                <!-- 相手の映像 -->
-                <img src="IMG_5044 2.jpg" class="w-full h-full object-cover" alt="Partner">
-                
-                <!-- 名前ラベル -->
-                <div class="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm px-4 py-1.5 rounded-full shadow-sm text-sm font-bold text-gray-700 flex items-center gap-2">
-                    <div class="w-2 h-2 rounded-full bg-green-500"></div>
-                    大瀧篤
-                </div>
-            </div>
-
-            <!-- カウントダウンオーバーレイ -->
-            <div id="countdown-overlay" class="absolute inset-0 flex items-center justify-center pointer-events-none hidden z-30 bg-black/10 backdrop-blur-[2px] rounded-2xl m-2">
-                <div id="countdown-text" class="text-[180px] font-extrabold text-white countdown-number drop-shadow-2xl scale-100">3</div>
-            </div>
-        </div>
-
-        <!-- コントロールフッター -->
-        <div class="px-6 py-6 bg-white flex justify-center items-center relative z-20">
-            
-            <div class="absolute left-8 text-sm text-gray-400 hidden sm:block">
-                <i class="fas fa-info-circle mr-1"></i> お題に合わせてポーズをとろう！
-            </div>
-
-            <!-- シャッターボタン -->
-            <button onclick="startShootingSequence()" id="shutter-btn" class="shutter-btn group relative w-20 h-20 rounded-full bg-gradient-to-r from-[#ff7e5f] to-[#feb47b] shadow-lg shadow-orange-200 flex items-center justify-center border-4 border-white ring-4 ring-orange-100">
-                <i class="fas fa-camera text-3xl text-white drop-shadow-md"></i>
+        <div class="flex justify-center items-end gap-4 pb-8 relative">
+            <button class="interactive bg-white hover:bg-gray-50 text-gray-700 px-6 py-3 rounded-full font-bold transition-all transform hover:scale-105 shadow-lg border border-gray-200 flex items-center gap-2">
+                <i class="fas fa-redo"></i>
+                もう一度撮る
+            </button>
+            <button class="interactive bg-gradient-to-r from-[#ff7e5f] to-[#feb47b] hover:shadow-orange-500/50 text-white px-8 py-3 rounded-full font-bold shadow-lg transition-all transform hover:scale-105 flex items-center gap-2">
+                <i class="fas fa-wallet"></i>
+                ウォレットに保存
             </button>
 
-            <!-- ギャラリーアイコン（ダミー） -->
-            <div class="absolute right-8 w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center text-gray-400 cursor-pointer hover:bg-gray-200 transition-colors hidden sm:flex">
-                <i class="fas fa-images"></i>
+            <div class="absolute bottom-8 right-0 flex flex-col gap-2 interactive">
+                <span class="text-xs text-gray-500 font-bold mb-1 text-right">裏面デザイン</span>
+                <button onclick="changeBackImage('ズッ友！.png')" class="bg-white/90 backdrop-blur hover:bg-white text-gray-700 px-4 py-2 rounded-lg shadow-sm border border-gray-200 text-sm font-bold transition-all hover:scale-105">ズッ友！</button>
+                <button onclick="changeBackImage('大成功！.png')" class="bg-white/90 backdrop-blur hover:bg-white text-gray-700 px-4 py-2 rounded-lg shadow-sm border border-gray-200 text-sm font-bold transition-all hover:scale-105">大成功！</button>
+                <button onclick="changeBackImage('選挙.png')" class="bg-white/90 backdrop-blur hover:bg-white text-gray-700 px-4 py-2 rounded-lg shadow-sm border border-gray-200 text-sm font-bold transition-all hover:scale-105">選挙</button>
             </div>
         </div>
-
-        <!-- フラッシュレイヤー -->
-        <div id="flash-overlay" class="absolute inset-0 bg-white opacity-0 z-50"></div>
-
     </div>
 
     <script>
-        function startShootingSequence() {
-            const btn = document.getElementById('shutter-btn');
-            const countdownOverlay = document.getElementById('countdown-overlay');
-            const countdownText = document.getElementById('countdown-text');
-            const flash = document.getElementById('flash-overlay');
+        // --- 設定 ---
+        const IMG_BACK_INITIAL = 'ズッ友！.png'; 
+        const IMG_LOGO = 'アセット 3@4x.png';
 
-            // ボタン無効化＆見た目変更
-            btn.classList.add('opacity-50', 'pointer-events-none', 'ring-0');
-            
-            // カウントダウン開始
-            countdownOverlay.classList.remove('hidden');
-            
-            let count = 3;
-            countdownText.innerText = count;
-            
-            // アニメーション用クラスのリセット
-            countdownText.style.transform = "scale(0.5)";
-            setTimeout(() => countdownText.style.transform = "scale(1.2)", 50);
+        // 名刺サイズ比率 (91mm x 55mm)
+        const CARD_WIDTH = 9.1;
+        const CARD_HEIGHT = 5.5;
+        const CARD_DEPTH = 0.15;
+        const CARD_RADIUS = 0.3;
 
-            const timer = setInterval(() => {
-                count--;
-                if (count > 0) {
-                    countdownText.innerText = count;
-                    // ボヨンと弾むアニメーション
-                    countdownText.style.transition = "none";
-                    countdownText.style.transform = "scale(0.8)";
-                    setTimeout(() => {
-                        countdownText.style.transition = "transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)";
-                        countdownText.style.transform = "scale(1.2)";
-                    }, 50);
-                } else if (count === 0) {
-                    clearInterval(timer);
-                    countdownText.innerText = "CHEESE!";
-                    countdownText.style.fontSize = "80px";
-                    
-                    setTimeout(() => {
-                        // フラッシュ！
-                        flash.style.opacity = "1";
-                        
-                        setTimeout(() => {
-                            flash.style.opacity = "0";
-                            countdownOverlay.classList.add('hidden');
-                            
-                            // 撮影完了アラート
-                            setTimeout(() => {
-                                alert("撮影完了！\n名刺を生成しています...");
-                                // 状態リセット
-                                btn.classList.remove('opacity-50', 'pointer-events-none', 'ring-0');
-                                countdownText.style.fontSize = ""; // フォントサイズ戻す
-                            }, 300);
-                        }, 150);
-                    }, 600);
+        let scene, camera, renderer, cardMesh;
+        let isDragging = false;
+        let previousMousePosition = { x: 0, y: 0 };
+
+        let backTexture, ctxB;
+
+        window.onload = function() {
+            init3D();
+            animate();
+        };
+
+        function init3D() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xf0f4f8);
+
+            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 18;
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.shadowMap.enabled = true;
+            document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+            // ライティング
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+            scene.add(ambientLight);
+
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
+            dirLight.position.set(5, 10, 7);
+            dirLight.castShadow = true;
+            scene.add(dirLight);
+
+            // --- 1. 表面（ビジネス情報）の生成 ---
+            const frontCanvas = document.createElement('canvas');
+            frontCanvas.width = 1024;
+            frontCanvas.height = 619;
+            const ctxF = frontCanvas.getContext('2d');
+            
+            const frontTexture = new THREE.CanvasTexture(frontCanvas);
+            frontTexture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+
+            let loadedLogoImg = null;
+
+            function renderFrontCard() {
+                ctxF.fillStyle = '#ffffff';
+                ctxF.fillRect(0, 0, 1024, 619);
+
+                if (loadedLogoImg) {
+                    const logoHeight = 350; 
+                    const scale = logoHeight / loadedLogoImg.height;
+                    const logoWidth = loadedLogoImg.width * scale;
+                    const x = 1024 - logoWidth - 50;
+                    const y = (619 - logoHeight) / 2;
+                    ctxF.drawImage(loadedLogoImg, x, y, logoWidth, logoHeight);
                 }
-            }, 1000);
+
+                ctxF.fillStyle = '#333333';
+                ctxF.font = 'bold 80px "Noto Sans JP"';
+                ctxF.fillText('猪原 大智', 60, 180);
+
+                ctxF.fillStyle = '#666666';
+                ctxF.font = '500 32px "Noto Sans JP"';
+                ctxF.fillText('筑波大学情報メディア創成学類', 60, 240);
+
+                ctxF.fillStyle = '#555555';
+                ctxF.font = '30px "Noto Sans JP"';
+                const lineHeight = 50;
+                let startY = 400;
+
+                ctxF.fillText('Tel: 070-XXXX-XXXX', 60, startY);
+                ctxF.fillText('Email: s2210036@u.tsukuba.ac.jp', 60, startY + lineHeight);
+                ctxF.fillText('Web: inotai.net', 60, startY + lineHeight * 2);
+
+                frontTexture.needsUpdate = true;
+            }
+
+            const logoImg = new Image();
+            logoImg.crossOrigin = "anonymous";
+            logoImg.onload = () => {
+                loadedLogoImg = logoImg;
+                renderFrontCard();
+            };
+            logoImg.onerror = () => renderFrontCard();
+            logoImg.src = IMG_LOGO;
+
+            renderFrontCard();
+
+            // --- 2. 裏面（生成された画像）の準備 ---
+            const backCanvas = document.createElement('canvas');
+            backCanvas.width = 1024;
+            backCanvas.height = 619;
+            ctxB = backCanvas.getContext('2d');
+
+            backTexture = new THREE.CanvasTexture(backCanvas);
+            backTexture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+            
+            // 初期の裏面画像をロード
+            changeBackImage(IMG_BACK_INITIAL);
+
+            // --- ジオメトリ生成 ---
+            const shape = new THREE.Shape();
+            const w = CARD_WIDTH;
+            const h = CARD_HEIGHT;
+            const r = CARD_RADIUS; 
+            const x = -w / 2;
+            const y = -h / 2;
+
+            shape.moveTo(x + r, y);
+            shape.lineTo(x + w - r, y);
+            shape.quadraticCurveTo(x + w, y, x + w, y + r);
+            shape.lineTo(x + w, y + h - r);
+            shape.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+            shape.lineTo(x + r, y + h);
+            shape.quadraticCurveTo(x, y + h, x, y + h - r);
+            shape.lineTo(x, y + r);
+            shape.quadraticCurveTo(x, y, x + r, y);
+
+            const extrudeSettings = { depth: CARD_DEPTH, bevelEnabled: false, steps: 1 };
+            const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+
+            geometry.computeBoundingBox();
+            const max = geometry.boundingBox.max;
+            const min = geometry.boundingBox.min;
+            const offset = new THREE.Vector2(0 - min.x, 0 - min.y);
+            const range = new THREE.Vector2(max.x - min.x, max.y - min.y);
+
+            const uvAttribute = geometry.attributes.uv;
+            for (let i = 0; i < uvAttribute.count; i++) {
+                const u = uvAttribute.getX(i);
+                const v = uvAttribute.getY(i);
+                uvAttribute.setXY(i, (u + offset.x) / range.x, (v + offset.y) / range.y);
+            }
+            geometry.attributes.uv.needsUpdate = true;
+            geometry.computeVertexNormals();
+
+            // --- マテリアルとメッシュ生成 ---
+            const matFront = new THREE.MeshBasicMaterial({ map: frontTexture });
+            const matBack = new THREE.MeshBasicMaterial({ map: backTexture }); 
+            const matSide = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5 }); 
+
+            const baseMesh = new THREE.Mesh(geometry, matSide);
+            
+            const planeGeo = new THREE.ShapeGeometry(shape);
+            planeGeo.computeBoundingBox();
+            const pMax = planeGeo.boundingBox.max;
+            const pMin = planeGeo.boundingBox.min;
+            const pOffset = new THREE.Vector2(0 - pMin.x, 0 - pMin.y);
+            const pRange = new THREE.Vector2(pMax.x - pMin.x, pMax.y - pMin.y);
+            const pUv = planeGeo.attributes.uv;
+            for(let i=0; i<pUv.count; i++){
+                pUv.setXY(i, (pUv.getX(i)+pOffset.x)/pRange.x, (pUv.getY(i)+pOffset.y)/pRange.y);
+            }
+
+            const frontMesh = new THREE.Mesh(planeGeo, matFront);
+            frontMesh.position.z = CARD_DEPTH + 0.001;
+
+            const backMesh = new THREE.Mesh(planeGeo, matBack);
+            backMesh.rotation.y = Math.PI; // メッシュ自体を裏返す
+
+            // ★修正点: テクスチャの設定で反転させる
+            // テクスチャの中心を基準に水平方向（U方向）に反転
+            backTexture.center.set(0.5, 0.5);
+            backTexture.repeat.set(-1, 1);
+
+            backMesh.position.z = -0.001;
+
+            cardMesh = new THREE.Group();
+            cardMesh.add(baseMesh);
+            cardMesh.add(frontMesh);
+            cardMesh.add(backMesh);
+            baseMesh.position.z = 0; 
+
+            scene.add(cardMesh);
+            cardMesh.rotation.y = -0.5;
+            cardMesh.rotation.x = 0.2;
+
+            const container = document.getElementById('canvas-container');
+            container.addEventListener('mousedown', onMouseDown, false);
+            container.addEventListener('touchstart', onTouchStart, {passive: false});
+            window.addEventListener('mouseup', onMouseUp, false);
+            window.addEventListener('touchend', onMouseUp, false);
+            window.addEventListener('mousemove', onMouseMove, false);
+            window.addEventListener('touchmove', onTouchMove, {passive: false});
+            window.addEventListener('resize', onWindowResize, false);
+        }
+
+        // --- 画像切り替え関数 ---
+        function changeBackImage(imageSrc) {
+            const backImg = new Image();
+            backImg.crossOrigin = "anonymous";
+            
+            backImg.onload = () => {
+                ctxB.fillStyle = '#222';
+                ctxB.fillRect(0, 0, 1024, 619); // 背景リセット
+                
+                // ★修正点: Canvas側での反転処理は削除し、素直に描画する
+                // 反転はThree.jsのテクスチャ設定（backTexture.repeat）に任せる
+                ctxB.drawImage(backImg, 0, 0, 1024, 619);
+                
+                backTexture.needsUpdate = true; // Three.jsに更新を通知
+            };
+            
+            backImg.onerror = () => {
+                ctxB.fillStyle = '#333';
+                ctxB.fillRect(0,0,1024,619);
+                ctxB.fillStyle = '#fff';
+                ctxB.font = '30px Arial';
+                ctxB.textAlign = 'center';
+                // エラー表示も素直に描画
+                ctxB.fillText('Image Load Failed', 512, 310);
+                
+                backTexture.needsUpdate = true;
+            };
+
+            backImg.src = imageSrc;
+        }
+
+        // --- イベント群 ---
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        }
+
+        function onMouseDown(event) {
+            isDragging = true;
+            previousMousePosition = { x: event.clientX, y: event.clientY };
+        }
+        function onTouchStart(event) {
+            if(event.touches.length === 1) {
+                isDragging = true;
+                previousMousePosition = { x: event.touches[0].clientX, y: event.touches[0].clientY };
+            }
+        }
+        function onMouseUp() { isDragging = false; }
+        
+        function onMouseMove(event) {
+            if (isDragging) {
+                const deltaMove = { x: event.clientX - previousMousePosition.x, y: event.clientY - previousMousePosition.y };
+                cardMesh.rotation.y += deltaMove.x * 0.01;
+                cardMesh.rotation.x += deltaMove.y * 0.01;
+                previousMousePosition = { x: event.clientX, y: event.clientY };
+            }
+        }
+        function onTouchMove(event) {
+            if (isDragging && event.touches.length === 1) {
+                event.preventDefault();
+                const deltaMove = { x: event.touches[0].clientX - previousMousePosition.x, y: event.touches[0].clientY - previousMousePosition.y };
+                cardMesh.rotation.y += deltaMove.x * 0.01;
+                cardMesh.rotation.x += deltaMove.y * 0.01;
+                previousMousePosition = { x: event.touches[0].clientX, y: event.touches[0].clientY };
+            }
         }
     </script>
 </body>
